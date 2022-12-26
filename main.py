@@ -25,4 +25,5 @@ if settings.config['cron']:
         schedule.run_pending()
         time.sleep(1)
 else:
-    work_flow.prepare()
+    work_flow.do_my_job()
+    #work_flow.prepare()

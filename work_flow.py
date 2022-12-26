@@ -16,7 +16,83 @@ import push
 import logging
 import time
 import datetime
+import pandas as pd
+from strategy import high_go_back
+import matplotlib.pyplot as plt
+from pylab import mpl
 
+import numpy as np
+import seaborn as sns
+
+#高点前杀入策略,符合5日涨幅超30%的条件后，在当天收盘竞价杀入，待反弹出现后伺机卖出（待确定卖出条件）
+def do_h2h_backtest(h,b,r):
+    return
+
+#抢反弹策略
+def do_back_test1(h,b,r):
+    return
+
+def sns_plot(df_data,data_name,bjust_print=True):
+    ax = sns.kdeplot(df_data[data_name])
+    x = ax.lines[0].get_xdata() # Get the x data of the distribution
+    y = ax.lines[0].get_ydata() # Get the y data of the distribution
+    maxid = np.argmax(y) # The id of the peak (maximum of y data)
+    if bjust_print:
+        print("data_name 大概率值为 %.1f%%"%(x[maxid]))
+    else:
+        plt.plot(x[maxid],y[maxid], 'bo', ms=3)
+        plt.text(x[maxid],y[maxid],"%.1f"%(x[maxid]))
+        plt.show()
+    return x[maxid]
+
+def do_analyse(df_data):
+    #画高点涨幅的正态分布图
+    print("最高涨幅标准差为：%.2f%%,平均值：%.2f%%,"%(df_data['高点涨幅'].std(),df_data['高点涨幅'].mean()))
+    print("回撤跌幅标准差为：%.2f%%,平均值：%.2f%%,"%(df_data['回撤跌幅'].std(),df_data['回撤跌幅'].mean()))
+    print("反弹幅度标准差为：%.2f%%,平均值：%.2f%%,"%(df_data['反弹幅度'].std(),df_data['反弹幅度'].mean()))
+    # 这个是用DataFrame的画图函数出来的，拿不到点
+    # df_data['高点涨幅'].plot(kind="kde",title="高点涨幅")
+    # plt.show()
+    # df_data['回撤跌幅'].plot(kind="kde",title="回撤跌幅")
+    # plt.show()
+    # df_data['反弹幅度'].plot(kind="kde",title="反弹幅度")
+    # plt.show()
+
+    #用sns
+    h = sns_plot(df_data,'高点涨幅')
+    b = sns_plot(df_data,'回撤跌幅')
+    r = sns_plot(df_data,'反弹幅度')
+
+    return h,b,r
+
+def do_my_job(bdo_analyse = True):
+    mpl.rcParams['font.sans-serif'] = ['Microsoft YaHei'] # 指定默认字体：解决plot不能显示中文问题
+    mpl.rcParams['axes.unicode_minus'] = False  # 解决保存图像是负号'-'显示为方块的问题
+    logging.info("************************ Cy job start ***************************************")
+    all_data = ak.stock_zh_a_spot_em()
+    subset = all_data[['代码', '名称']]
+    stocks = [tuple(x) for x in subset.values]
+    statistics(all_data, stocks)
+
+    #stocks_data = data_fetcher.run(stocks)
+    stocks_data = data_fetcher.run(stocks[0:100])#调试只用100个股票数据就好了
+
+    end_date = settings.config['end_date']
+    df= pd.DataFrame(columns=['号码','股票名','起始日期','起始价格','高点日期','高点价格','高点涨幅','起时间','低点日期','低点价格','回撤跌幅','落时间','反弹结束','反弹价格','反弹幅度','反弹时间','是否反转','持续时间']) 
+    for stock_data in stocks_data.items():
+        high_go_back.check(stock_data[0], stock_data[1], df,end_date=end_date,threshold=len(stock_data[1]))
+
+    df.to_csv('filterData.csv',encoding='utf-8-sig')
+
+    h = 0.537
+    b = 0.236
+    r = 0.231
+    if bdo_analyse:
+        h,b,r = do_analyse(df)
+    
+    print("现在以 高幅%.1f%%,撤幅%.1f%%,弹幅%.1f%% 为参数回测最近一年数据"%(h,b,r))
+
+    logging.info("************************ Cy job end   ***************************************")
 
 def prepare():
     logging.info("************************ process start ***************************************")
@@ -46,7 +122,8 @@ def prepare():
     logging.info("************************ process   end ***************************************")
 
 def process(stocks, strategies):
-    stocks_data = data_fetcher.run(stocks)
+    #stocks_data = data_fetcher.run(stocks)
+    stocks_data = data_fetcher.run(stocks[0:100])#调试只用100个股票数据就好了
     for strategy, strategy_func in strategies.items():
         check(stocks_data, strategy, strategy_func)
         time.sleep(2)
