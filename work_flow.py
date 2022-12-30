@@ -19,18 +19,10 @@ import datetime
 import pandas as pd
 from strategy import high_go_back
 import matplotlib.pyplot as plt
-from pylab import mpl
+from backtest import high_go_backtest1
 
 import numpy as np
 import seaborn as sns
-
-#高点前杀入策略,符合5日涨幅超30%的条件后，在当天收盘竞价杀入，待反弹出现后伺机卖出（待确定卖出条件）
-def do_h2h_backtest(h,b,r):
-    return
-
-#抢反弹策略
-def do_back_test1(h,b,r):
-    return
 
 def sns_plot(df_data,data_name,bjust_print=True):
     ax = sns.kdeplot(df_data[data_name])
@@ -66,8 +58,6 @@ def do_analyse(df_data):
     return h,b,r
 
 def do_my_job(bdo_analyse = True):
-    mpl.rcParams['font.sans-serif'] = ['Microsoft YaHei'] # 指定默认字体：解决plot不能显示中文问题
-    mpl.rcParams['axes.unicode_minus'] = False  # 解决保存图像是负号'-'显示为方块的问题
     logging.info("************************ Cy job start ***************************************")
     all_data = ak.stock_zh_a_spot_em()
     subset = all_data[['代码', '名称']]
@@ -93,6 +83,20 @@ def do_my_job(bdo_analyse = True):
     print("现在以 高幅%.1f%%,撤幅%.1f%%,弹幅%.1f%% 为参数回测最近一年数据"%(h,b,r))
 
     logging.info("************************ Cy job end   ***************************************")
+
+def go_test():
+    logging.info("************************ Cy test start ***************************************")
+    all_data = ak.stock_zh_a_spot_em()
+    subset = all_data[['代码', '名称']]
+    stocks = [tuple(x) for x in subset.values]
+    #stocks_data = data_fetcher.run(stocks)
+    stocks_data = data_fetcher.run(stocks[0:100])#调试只用100个股票数据就好了
+
+    end_date = settings.config['end_date']
+    high_go_backtest1.do_h2h_backtest(stocks_data)
+
+    logging.info("************************ Cy test end   ***************************************")
+    pass
 
 def prepare():
     logging.info("************************ process start ***************************************")

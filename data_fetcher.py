@@ -14,7 +14,7 @@ def fetch(code_name,data_dir):
 
     if os.path.exists(save_file):
         print("restore file:" + save_file)
-        return pd.read_csv(save_file)
+        return pd.read_csv(save_file,encoding='utf-8-sig')
     else:
         data = ak.stock_zh_a_hist(symbol=stock, period="daily", start_date="20200101", adjust="qfq")
 
@@ -25,7 +25,7 @@ def fetch(code_name,data_dir):
         data['p_change'] = tl.ROC(data['收盘'], 1)
 
         print("now save file:" + save_file)
-        data.to_csv(save_file)
+        data.to_csv(save_file,encoding='utf-8-sig')
         return data
 
 
@@ -35,6 +35,8 @@ def run(stocks):
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
 
+    #取到的数据如下：p_charge是代码自己加的，等同于涨幅
+    #Index(['Unnamed: 0', '日期', '开盘', '收盘', '最高', '最低', '成交量', '成交额', '振幅', '涨跌幅','涨跌额','换手率’,'p_charge']}
     stocks_data = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
         future_to_stock = {executor.submit(fetch, stock, data_dir): stock for stock in stocks}
